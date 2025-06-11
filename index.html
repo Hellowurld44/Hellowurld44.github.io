@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Poème en fleurs</title>
+<title>Simlple poem</title>
 <style>
   html, body {
     margin: 0; padding: 0; overflow: hidden; height: 100%;
@@ -22,56 +22,47 @@
     will-change: left, top;
   }
 
-  .flower {
-    position: absolute;
-    font-size: 24px;
+  #toggle-button {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 20px;
+    font-size: 1rem;
+    border: none;
+    background-color: rgba(255, 252, 242, 0.15);
+    color: #fffbe6;
+    border-radius: 25px;
     cursor: pointer;
-    user-select: none;
     z-index: 10;
-    transition: transform 0.3s ease;
+    backdrop-filter: blur(5px);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    user-select: none;
   }
-
-  .flower:hover {
-    transform: scale(1.3);
+  #toggle-button:hover {
+    background-color: rgba(255, 252, 242, 0.35);
+    transform: translateX(-50%) scale(1.1);
   }
 </style>
 </head>
 <body>
 
+<button id="toggle-button">Click me !</button>
+
 <script>
 (() => {
-  const phrase = `Que mon bonheur portes ton nom
-Que tes yeux rangent mon espace
-Que je sois ton terrain conquis
-
-Ainsi deviendront-nous
-cette rose unique
-à jamais sauvée
-du long déssechement
-
-Ainsi pourrons-nous vivre
-sans faiblir au coeur
-des foules grimaçantes
-et soutenir la lumière crue
-des mauvais jours
-
-Je t'offres les lèvres de ma plaie
-c'est la plus grande douceur que j'ai
-Je t'offre l'etreinte de l'absent
-c'est le plus long voyage du sang
-Je t'offre la voix de mes silences
-c'est la plus sûre des confidences
-Je t'offre de t'aimer Dieu sait où
-
-n'est-ce pas le seul des rendez-vous ?`;
+  // Phrase avec retours à la ligne indiqués par '\n'
+  const phrase = "Que mon bonheur portes ton nom\nQue tes yeux rangent mon espace\nQue je sois ton terrain conquis\n\nAinsi deviendront-nous\ncette rose unique\nà jamais sauvée\ndu long déssechement\n\nAinsi pourrons-nous vivre\nsans faiblir au coeur\ndes foules grimaçantes\net soutenir la lumière crue\ndes mauvais jours\n\nJe t'offres les lèvres de ma plaie\nc'est la plus grande douceur que j'ai\nJe t'offre l'etreinte de l'absent\nc'est le plus long voyage du sang\nJe t'offre la voix de mes silences\nc'est la plus sûre des confidences\nJe t'offre de t'aimer Dieu sait où\n\nn'est-ce pas le seul des rendez-vous ?";
 
   const letters = [];
   const floatingSpeed = 0.1;
   let phrasePositions = [];
   let isPhraseShown = false;
-  const fontSize = 20;
-  const lineHeight = fontSize * 1.6;
+  const button = document.getElementById('toggle-button');
+  const fontSize = 20; // px approx pour 1.3rem
+  const lineHeight = fontSize * 1.6; // espacement vertical entre lignes
 
+  // Crée les lettres au hasard
   function initLetters() {
     for (let i = 0; i < phrase.length; i++) {
       const span = document.createElement('span');
@@ -91,13 +82,16 @@ n'est-ce pas le seul des rendez-vous ?`;
     }
   }
 
+  // Calcule position des lettres par ligne avec retour à la ligne
   function computePhrasePositions() {
     phrasePositions = [];
 
+    // Découper en lignes
     const lines = phrase.split('\n');
     const totalHeight = lines.length * lineHeight;
     const startY = (window.innerHeight - totalHeight) / 2;
 
+    // Création d'un div invisible pour mesurer les lettres
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'absolute';
     tempDiv.style.visibility = 'hidden';
@@ -110,12 +104,15 @@ n'est-ce pas le seul des rendez-vous ?`;
     for(let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
       const line = lines[lineIndex];
 
+      // Largeur totale de la ligne
       tempDiv.textContent = line.replace(/ /g, '\u00A0');
       const lineWidth = tempDiv.offsetWidth;
 
+      // Position de départ X pour centrer ligne
       let startX = (window.innerWidth - lineWidth) / 2;
       const y = startY + lineIndex * lineHeight;
 
+      // Lettres de la ligne
       for(let i = 0; i < line.length; i++) {
         const ch = line[i] === ' ' ? '\u00A0' : line[i];
         tempDiv.textContent = ch;
@@ -126,8 +123,9 @@ n'est-ce pas le seul des rendez-vous ?`;
         letterIndex++;
       }
 
+      // Ajouter un espace pour le saut de ligne si ce n'est pas la dernière ligne
       if(lineIndex < lines.length - 1) {
-        phrasePositions[letterIndex] = { x: 0, y: 0 };
+        phrasePositions[letterIndex] = { x: 0, y: 0 }; // position hors écran pour le '\n'
         letterIndex++;
       }
     }
@@ -140,8 +138,10 @@ n'est-ce pas le seul des rendez-vous ?`;
       letter.x += letter.dx;
       letter.y += letter.dy;
 
-      if (letter.x < 0 || letter.x > window.innerWidth - letter.el.offsetWidth) letter.dx *= -1;
-      if (letter.y < 0 || letter.y > window.innerHeight - letter.el.offsetHeight) letter.dy *= -1;
+      if (letter.x < 0) letter.dx *= -1;
+      if (letter.x > window.innerWidth - letter.el.offsetWidth) letter.dx *= -1;
+      if (letter.y < 0) letter.dy *= -1;
+      if (letter.y > window.innerHeight - letter.el.offsetHeight) letter.dy *= -1;
 
       letter.el.style.left = `${letter.x}px`;
       letter.el.style.top = `${letter.y}px`;
@@ -151,6 +151,7 @@ n'est-ce pas le seul des rendez-vous ?`;
   function alignPhrase() {
     letters.forEach((letter, i) => {
       if (!phrasePositions[i]) {
+        // Pour les '\n' ou hors limite : cacher la lettre
         letter.el.style.opacity = '0';
         return;
       } else {
@@ -158,6 +159,7 @@ n'est-ce pas le seul des rendez-vous ?`;
       }
 
       const target = phrasePositions[i];
+
       letter.x = target.x;
       letter.y = target.y;
       letter.el.style.left = `${target.x}px`;
@@ -187,45 +189,12 @@ n'est-ce pas le seul des rendez-vous ?`;
     if (!isPhraseShown) {
       computePhrasePositions();
       alignPhrase();
+      button.textContent = "Click me !";
     } else {
       disperseLetters();
+      button.textContent = "Click me !";
     }
     isPhraseShown = !isPhraseShown;
-  }
-
-  function createFallingFlower() {
-    const flower = document.createElement('div');
-    flower.className = 'flower';
-    flower.textContent = '🌸';
-    flower.style.left = `${Math.random() * window.innerWidth}px`;
-    flower.style.top = `-30px`;
-    document.body.appendChild(flower);
-
-    let y = -30;
-    const fallSpeed = 1 + Math.random() * 1;
-
-    function fall() {
-      y += fallSpeed;
-      flower.style.top = `${y}px`;
-
-      if (y > window.innerHeight + 30) {
-        document.body.removeChild(flower);
-      } else {
-        requestAnimationFrame(fall);
-      }
-    }
-
-    flower.addEventListener('click', () => {
-      toggleDisplay();
-    });
-
-    fall();
-  }
-
-  function loopFlowerRain() {
-    setInterval(() => {
-      createFallingFlower();
-    }, 1500);
   }
 
   window.addEventListener('resize', () => {
@@ -241,8 +210,9 @@ n'est-ce pas le seul des rendez-vous ?`;
   }
 
   initLetters();
+  button.addEventListener('click', toggleDisplay);
   loop();
-  loopFlowerRain();
+
 })();
 </script>
 
