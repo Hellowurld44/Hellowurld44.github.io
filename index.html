@@ -1,17 +1,224 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Botaniste Mystère</title>
-    <link rel="stylesheet" href="style.css"> 
+<meta charset="UTF-8">
+<title>Sir Serpent Evolution</title>
+<style>
+body { margin:0; overflow:hidden; background:skyblue; }
+canvas { display:block; margin:auto; background:linear-gradient(#87CEEB,#ffffff); }
+</style>
 </head>
 <body>
 
-    <main id="game-container">
-        <h1>Chargement du jeu...</h1>
-    </main>
+<canvas id="game"></canvas>
 
-    <script src="script.js"></script>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 400;
+canvas.height = 600;
+
+let score = 0;
+let health = 3;
+
+let snake = {
+    x:200,
+    y:50,
+    size:50,
+    dir:1,
+    weight:2,
+    control:4,
+    handcuffed:false,
+    wounds:0,
+    beard:0,
+    prisonTattoo:false,
+
+    dollarPower:0,
+    eggPower:0,
+    weedPower:0
+};
+
+let objects=[];
+
+function spawnObject(){
+    const types=["dollar","egg","weed","tax","bird","cop"];
+    objects.push({
+        x:Math.random()*360,
+        y:canvas.height,
+        type:types[Math.floor(Math.random()*types.length)]
+    });
+}
+
+function drawSnake(){
+
+    // couleur base
+    let goldIntensity = snake.dollarPower/100;
+    let dirty = snake.beard/100;
+
+    let r = Math.floor(0 + 255*goldIntensity);
+    let g = Math.floor(150 - 80*dirty + 200*goldIntensity);
+    let b = Math.floor(0);
+
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(snake.x,snake.y,snake.size,snake.size);
+
+    // blessures
+    ctx.fillStyle="red";
+    for(let i=0;i<snake.wounds;i++){
+        ctx.fillRect(snake.x+5+i*5,snake.y+5,5,5);
+    }
+
+    // barbe taxe
+    if(snake.beard>0){
+        ctx.fillStyle="brown";
+        ctx.fillRect(snake.x+10,snake.y+40,30,10);
+    }
+
+    // yeux
+    let eyeRed = snake.weedPower/100;
+    let eyeAngry = snake.eggPower/100;
+
+    ctx.fillStyle=`rgb(${255*eyeRed},0,0)`;
+    ctx.beginPath();
+    ctx.arc(snake.x+15,snake.y+15,5+5*eyeAngry,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(snake.x+35,snake.y+15,5+5*eyeAngry,0,Math.PI*2);
+    ctx.fill();
+
+    // dents egg mode
+    if(snake.eggPower>20){
+        ctx.fillStyle="white";
+        ctx.fillRect(snake.x+15,snake.y+30,20,10);
+    }
+
+    // langue egg mode
+    if(snake.eggPower>40){
+        ctx.fillStyle="pink";
+        ctx.fillRect(snake.x+23,snake.y+35,5,15);
+    }
+
+    // sourire weed mode
+    if(snake.weedPower>20){
+        ctx.strokeStyle="black";
+        ctx.beginPath();
+        ctx.arc(snake.x+25,snake.y+30,15,0,Math.PI);
+        ctx.stroke();
+    }
+
+    // tatouage prison
+    if(snake.prisonTattoo){
+        ctx.fillStyle="black";
+        ctx.fillText("13",snake.x+5,snake.y+45);
+    }
+
+    // monocle
+    ctx.strokeStyle="gold";
+    ctx.beginPath();
+    ctx.arc(snake.x+35,snake.y+10,6,0,Math.PI*2);
+    ctx.stroke();
+}
+
+function drawObject(o){
+    const icons={
+        dollar:"💵",
+        egg:"🥚",
+        weed:"🌿",
+        tax:"🧾",
+        bird:"🐦",
+        cop:"🚔"
+    };
+    ctx.font="24px Arial";
+    ctx.fillText(icons[o.type],o.x,o.y);
+}
+
+function update(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle="black";
+    ctx.fillText("Score:"+score,10,20);
+    ctx.fillText("HP:"+health,10,40);
+
+    if(!snake.handcuffed){
+        snake.x+=snake.dir*snake.control;
+    }
+
+    if(snake.x<0)snake.x=0;
+    if(snake.x>350)snake.x=350;
+
+    snake.y+=snake.weight;
+    if(snake.y>canvas.height)snake.y=0;
+
+    drawSnake();
+
+    objects.forEach((o,i)=>{
+        o.y-=snake.weight;
+        drawObject(o);
+
+        if(
+            snake.x<o.x+20 &&
+            snake.x+snake.size>o.x &&
+            snake.y<o.y+20 &&
+            snake.y+snake.size>o.y
+        ){
+            switch(o.type){
+
+                case"dollar":
+                    score+=10;
+                    snake.handcuffed=false;
+                    snake.dollarPower=Math.min(100,snake.dollarPower+5);
+                break;
+
+                case"egg":
+                    score+=5;
+                    snake.weight+=0.3;
+                    snake.eggPower=Math.min(100,snake.eggPower+5);
+                break;
+
+                case"weed":
+                    score+=3;
+                    snake.weight=Math.max(1,snake.weight-0.3);
+                    snake.weedPower=Math.min(100,snake.weedPower+5);
+                break;
+
+                case"tax":
+                    snake.weight=Math.max(1,snake.weight-0.5);
+                    snake.beard=Math.min(100,snake.beard+10);
+                break;
+
+                case"bird":
+                    health--;
+                    snake.wounds++;
+                    if(health<=0) alert("GAME OVER");
+                break;
+
+                case"cop":
+                    snake.handcuffed=true;
+                    snake.prisonTattoo=true;
+                break;
+            }
+
+            objects.splice(i,1);
+        }
+
+        if(o.y<-30) objects.splice(i,1);
+    });
+
+    requestAnimationFrame(update);
+}
+
+setInterval(spawnObject,900);
+
+document.addEventListener("click",()=>{
+    if(!snake.handcuffed){
+        snake.dir*=-1;
+    }
+});
+
+update();
+</script>
+
 </body>
 </html>
